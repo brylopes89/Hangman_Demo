@@ -2,15 +2,13 @@
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Security;
 
 public class GameController : MonoBehaviour
-{        
-    private string[] level1Passwords = { "fiction", "author", "read", "biography" };    
-    private string[] level2Passwords = { "melody", "dance", "listen", "guitar" };    
-    private string[] level3Passwords = { "comedy", "horror", "romance", "action" };    
-
-    enum Level { Level1 = 0, Level2 = 1, Level3 = 2 };
-    Level currentLevel;
+{    
+    [Header("Levels")]
+    public HangmanLevel[] levels;
+    private int currentLevel = 0;
 
     [Header("Game Buttons")]
     [SerializeField]
@@ -44,11 +42,8 @@ public class GameController : MonoBehaviour
     [SerializeField]
     private AudioSource loseSFX;
 
-    private int currentWordLength;
-    private int lettersFound;
-    private int indexEnum;
+    private int lettersFound;    
     private string secretWord;
-    private bool foundLetter;
 
     [HideInInspector]
     public bool solved;							
@@ -60,17 +55,10 @@ public class GameController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        currentLevel = Level.Level1;
-        nextButton.gameObject.SetActive(false);
-        resetButton.gameObject.SetActive(false);
-
-        levelText.text = currentLevel.ToString();
-        UISolutionText.text = "";
-        UISolveText.text = "_";
-
-        SetRandomSecretWord(currentLevel);
+        currentLevel = 0;
         AddListeners();
-        Invoke("LateStart", 0.01f);
+        
+        Retry();
     }
 
     private void AddListeners()
@@ -85,28 +73,14 @@ public class GameController : MonoBehaviour
 
     public void LateStart()
     {
-        currentWordLength += CountLettersInWord();	// Count how many letters the word is using        
+        	// Count how many letters the word is using        
     }
 
 
-    private void SetRandomSecretWord(Level currentLevel)
-    {
-        switch (currentLevel)
-        {
-            case Level.Level1:
-                secretWord = level1Passwords[UnityEngine.Random.Range(0, level1Passwords.Length)];
-                hintText.text = "Hint: The current theme is books";
-                print(secretWord);
-                break;
-            case Level.Level2:
-                secretWord = level2Passwords[UnityEngine.Random.Range(0, level2Passwords.Length)];
-                hintText.text = "Hint: The current theme is music";
-                break;
-            case Level.Level3:
-                secretWord = level3Passwords[UnityEngine.Random.Range(0, level3Passwords.Length)];
-                hintText.text = "Hint: The current theme is movies";
-                break;
-        }        
+    private void SetRandomSecretWord(HangmanLevel level)
+    {        
+        secretWord = level.secretWords[UnityEngine.Random.Range(0, level.secretWords.Length)];
+        hintText.text = "Hint: " + level.hint;      
     }
 
     public void OnLetterPicked(int index, string letterText)
@@ -122,7 +96,7 @@ public class GameController : MonoBehaviour
 
     public bool CheckLetter(string l)
     {                   
-        foundLetter = false;
+        bool foundLetter = false;
         string n = UISolveText.text;                        
         for (int i = 0; i < secretWord.Length; i++)
         {       
@@ -139,7 +113,7 @@ public class GameController : MonoBehaviour
             if (!correctSFX.isPlaying)
                 correctSFX.Play();
             UISolveText.text = n;                               
-            if (lettersFound >= currentWordLength)
+            if (lettersFound >= secretWord.Length)
             {               
                 SolvedWord();                                   
             }
@@ -166,11 +140,11 @@ public class GameController : MonoBehaviour
 
     public void WrongLetter()
     {        
-        HangmanController.hangman.punish();
+        HangmanController.hangman.Punish();
         if (!incorrectSFX.isPlaying)
             incorrectSFX.Play();
 
-        if (HangmanController.hangman.isDead)
+        if (HangmanController.hangman.IsDead)
         {
             if (!loseSFX.isPlaying)
                 loseSFX.Play();
@@ -182,67 +156,60 @@ public class GameController : MonoBehaviour
         
     }
 
-    public int CountLettersInWord()
+    public void ProcessLettersInWord()
     {
-        int c = secretWord.Length;        
         UISolveText.text = "";
 
         for (int i = 0; i < secretWord.Length; i++)
         {            
              UISolveText.text = UISolveText.text + "-";            
         }
-
-        return c;
     }
 
-    public bool CheckLetterButtons(string s)
+    public void ShowHint()
     {
-        for (int i = 0; i < allButtonLetters.Length; i++)
+        hintText.enabled = true;
+        hintButton.gameObject.SetActive(false);
+    }
+
+    public void Next()
+    {
+        currentLevel++;
+
+        if (currentLevel == levels.Length-1)
         {
-            if (s == allButtonLetters[i].ToString())
-            {
-                return true;
-            }
+            nextButton.GetComponentInChildren<Text>().text = "Play Again";
+        } else if (currentLevel > levels.Length-1)
+        {
+            currentLevel = 0;
+            nextButton.GetComponentInChildren<Text>().text = "Next Level";
         }
-        return false;
+
+        Retry();
     }
 
-    public void HintButtonPressed()
-    {
-        hintText.enabled = !hintText.enabled;
-        hintButton.gameObject.SetActive(!hintButton.gameObject.activeSelf);
-    }
-
-    public void next()
-    {
-        HangmanController.hangman.reset();
-        
-        if (currentLevel == Level.Level1)
-            currentLevel = Level.Level2;
-        else if (currentLevel == Level.Level2)
-            currentLevel = Level.Level3;        
-
-        Reset();
-    }
-
-    public void Reset()
+    public void Retry()
     {        
-        HangmanController.hangman.reset();
-        levelText.text = currentLevel.ToString();
+        HangmanController.hangman.ResetHangman();
+        levelText.text = "Level " + (currentLevel+1) + "/" + levels.Length + ":\n" + levels[currentLevel].levelName;        
 
         UISolutionText.text = "";
         UISolveText.text = "_";
         secretWord = "";
 
         solved = false;
-        failed = false;
-        foundLetter = false;
+        failed = false;        
 
-        SetRandomSecretWord(currentLevel);
-        Invoke("LateStart", 0.01f);
+        lettersFound = 0;
+
+        SetRandomSecretWord(levels[currentLevel]);
+        ProcessLettersInWord();
 
         foreach (Button button in letterButtons)
             button.gameObject.SetActive(true);
+
+        hintButton.gameObject.SetActive(true);
+        hintText.enabled = false;
         nextButton.gameObject.SetActive(false);
         resetButton.gameObject.SetActive(false);        
     }

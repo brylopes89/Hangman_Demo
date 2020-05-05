@@ -28,7 +28,7 @@ public class HangmanController : MonoBehaviour
         if (hangman == null)
             hangman = this;
     }
-    public bool isDead
+    public bool IsDead
     {
         get { return tries < 0; }
     }
@@ -36,16 +36,16 @@ public class HangmanController : MonoBehaviour
     void Start()
     {
         parts = new GameObject[] { rightLeg, leftLeg, leftArm, rightArm, torso, head };
-        reset();
+        ResetHangman();
     }
 
-    public void punish()
+    public void Punish()
     {        
         if (tries >= 0)        
             parts[tries--].SetActive(true);           
     }
 
-    public void reset()
+    public void ResetHangman()
     {
         if (parts == null)
             return;
