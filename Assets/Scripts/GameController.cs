@@ -48,13 +48,12 @@ public class GameController : MonoBehaviour
 
     private int lettersFound;    
     private string secretWord;
+    private bool isWon;
 
     [HideInInspector]
     public bool solved;							
     [HideInInspector]
-    public bool failed;
-    [HideInInspector]
-    public string allButtonLetters;    
+    public bool failed;       
 
     // Start is called before the first frame update
     void Start()
@@ -65,21 +64,29 @@ public class GameController : MonoBehaviour
         Retry();
     }
 
+    private void Update()
+    {
+        foreach (KeyCode vKey in Enum.GetValues(typeof(KeyCode)))
+        {
+            if (Input.GetKeyDown(vKey)) 
+            {                
+                foreach(Button button in letterButtons)
+                {
+                    if (button.GetComponent<Text>().text == vKey.ToString())
+                        button.onClick.Invoke();
+                }                  
+            }
+        }
+    }
+
     private void AddListeners()
     {
         for (int i = 0; i < letterButtons.Length; i++)
         {
-            int index = i;
-            letterButtons[index].onClick.AddListener(() => OnLetterPicked(index, letterButtons[index].GetComponent<Text>().text));
-            allButtonLetters += letterButtons[index].GetComponent<Text>().text;
+            int index = i;           
+            letterButtons[index].onClick.AddListener(() => OnLetterPicked(index, letterButtons[index].GetComponent<Text>().text));            
         }
     }
-
-    public void LateStart()
-    {
-        	// Count how many letters the word is using        
-    }
-
 
     private void SetRandomSecretWord(HangmanLevel level)
     {        
@@ -88,10 +95,9 @@ public class GameController : MonoBehaviour
     }
 
     public void OnLetterPicked(int index, string letterText)
-    {
-        Debug.Log("You have clicked the letter " + letterText, letterButtons[index]);
+    {       
         if (!solved && !failed)
-        {
+        {            
             string t = letterText.ToLower();
             if (!CheckLetter(t))
                 letterButtons[index].gameObject.SetActive(!letterButtons[index].gameObject.activeSelf);
@@ -143,7 +149,11 @@ public class GameController : MonoBehaviour
             part.SetActive(true);
         }
         anim.SetBool("isVictory", true);
-        UISolutionText.text = "You got it!";
+        if(isWon)
+            UISolutionText.text = "You Win! Play Again?";  
+        else
+            UISolutionText.text = "You got it!";
+
         nextButton.gameObject.SetActive(true);              
     }
 
@@ -187,10 +197,12 @@ public class GameController : MonoBehaviour
 
         if (currentLevel == levels.Length-1)
         {            
-            nextButton.GetComponentInChildren<Text>().text = "Play Again";            
+            nextButton.GetComponentInChildren<Text>().text = "Play Again";
+            isWon = true;
         } else if (currentLevel > levels.Length-1)
         {
             currentLevel = 0;
+            isWon = false;
             nextButton.GetComponentInChildren<Text>().text = "Next Level";
         }
         
