@@ -42,6 +42,10 @@ public class GameController : MonoBehaviour
     [SerializeField]
     private AudioSource loseSFX;
 
+    [Header("Animator")]
+    [SerializeField]
+    private Animator anim;
+
     private int lettersFound;    
     private string secretWord;
 
@@ -134,8 +138,13 @@ public class GameController : MonoBehaviour
             winSFX.Play();
         }
 
-        nextButton.gameObject.SetActive(true);
-        Debug.Log("You win!");        
+        foreach(GameObject part in HangmanController.hangman.parts)
+        {
+            part.SetActive(true);
+        }
+        anim.SetBool("isVictory", true);
+        UISolutionText.text = "You got it!";
+        nextButton.gameObject.SetActive(true);              
     }
 
     public void WrongLetter()
@@ -177,20 +186,21 @@ public class GameController : MonoBehaviour
         currentLevel++;
 
         if (currentLevel == levels.Length-1)
-        {
-            nextButton.GetComponentInChildren<Text>().text = "Play Again";
+        {            
+            nextButton.GetComponentInChildren<Text>().text = "Play Again";            
         } else if (currentLevel > levels.Length-1)
         {
             currentLevel = 0;
             nextButton.GetComponentInChildren<Text>().text = "Next Level";
         }
-
+        
         Retry();
     }
 
     public void Retry()
     {        
         HangmanController.hangman.ResetHangman();
+        anim.SetBool("isVictory", false);
         levelText.text = "Level " + (currentLevel+1) + "/" + levels.Length + ":\n" + levels[currentLevel].levelName;        
 
         UISolutionText.text = "";

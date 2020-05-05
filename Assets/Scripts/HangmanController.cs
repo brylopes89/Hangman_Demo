@@ -20,7 +20,8 @@ public class HangmanController : MonoBehaviour
     [SerializeField]
     private GameObject rightLeg;
 
-    private GameObject[] parts;
+    [HideInInspector]
+    public GameObject[] parts;
     private int tries;
 
     private void Awake()
